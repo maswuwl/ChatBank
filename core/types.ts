@@ -1,7 +1,8 @@
 
 export enum EngineMode {
   FLASH = 'Muntasir-Flash',
-  ULTRA = 'Muntasir-Ultra'
+  ULTRA = 'Muntasir-Ultra',
+  LOCAL_X1 = 'Sovereign-Core-X1'
 }
 
 export interface GroundingSource {
@@ -35,4 +36,5 @@ export interface SystemStatus {
   health: 'Optimal' | 'Degraded' | 'Offline';
   latency: number;
   iqLevel: number;
+  gpuLoad?: number;
 }
