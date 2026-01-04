@@ -3,7 +3,6 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
 import { GoogleGenAI, Modality, LiveServerMessage, Blob } from '@google/genai';
 
-// Manual implementation of encode/decode as required
 function encode(bytes: Uint8Array) {
   let binary = '';
   const len = bytes.byteLength;
@@ -23,7 +22,6 @@ function decode(base64: string) {
   return bytes;
 }
 
-// Decoding raw PCM data from model stream
 async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
@@ -65,7 +63,6 @@ const VoiceInterface: React.FC = () => {
 
   const startSession = async () => {
     setIsConnecting(true);
-    // Initializing with correct apiKey parameter
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     try {
@@ -91,7 +88,6 @@ const VoiceInterface: React.FC = () => {
             scriptProcessor.onaudioprocess = (audioProcessingEvent) => {
               const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
               const pcmBlob = createBlob(inputData);
-              // Solely rely on sessionPromise resolves to send realtime data
               sessionPromise.then((session) => {
                 session.sendRealtimeInput({ media: pcmBlob });
               });
@@ -155,24 +151,24 @@ const VoiceInterface: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 muntasir-glass rounded-xl mb-6">
+    <div className="flex items-center gap-3 p-3 km-glass-card rounded-xl mb-4">
       <div className="flex-1">
-        <h3 className="text-[#d4af37] font-bold flex items-center gap-2">
-          <Volume2 size={20} />
-          نظام الصوت الحي (Live Voice)
+        <h3 className="text-[#d4af37] font-bold text-[10px] flex items-center gap-1.5">
+          <Volume2 size={14} />
+          نظام الصوت الحي
         </h3>
-        <p className="text-xs text-gray-400 mt-1">تحدث مباشرة مع KM-X1 عبر القناة السيادية المشفرة.</p>
+        <p className="text-[7px] text-gray-500 mt-0.5 uppercase tracking-tighter">تحدث مباشرة مع القناة السيادية KM-X1.</p>
       </div>
       <button
         onClick={isActive ? stopSession : startSession}
         disabled={isConnecting}
-        className={`p-4 rounded-full transition-all duration-300 ${
+        className={`p-2.5 rounded-full transition-all duration-300 ${
           isActive 
-            ? 'bg-red-500/20 text-red-500 border border-red-500/50 animate-pulse' 
-            : 'bg-[#d4af37]/20 text-[#d4af37] border border-[#d4af37]/50 hover:bg-[#d4af37]/30'
+            ? 'bg-red-500/10 text-red-500 border border-red-500/30 animate-pulse' 
+            : 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/30 hover:bg-[#d4af37]/20'
         }`}
       >
-        {isConnecting ? <Loader2 size={24} className="animate-spin" /> : (isActive ? <MicOff size={24} /> : <Mic size={24} />)}
+        {isConnecting ? <Loader2 size={16} className="animate-spin" /> : (isActive ? <MicOff size={16} /> : <Mic size={16} />)}
       </button>
     </div>
   );

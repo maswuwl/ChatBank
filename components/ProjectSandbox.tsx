@@ -30,8 +30,8 @@ const ProjectSandbox: React.FC<ProjectSandboxProps> = ({ code, onClose }) => {
       <script src="https://cdn.tailwindcss.com"></script>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&display=swap" rel="stylesheet">
       <style>
-        body { font-family: 'Noto Kufi Arabic', sans-serif; margin: 0; padding: 0; background: #fff; }
-        ::-webkit-scrollbar { width: 5px; }
+        body { font-family: 'Noto Kufi Arabic', sans-serif; margin: 0; padding: 0; background: #fff; font-size: 11px; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #d4af37; }
         .km-preview-root { min-height: 100vh; }
       </style>
@@ -141,30 +141,29 @@ const ProjectSandbox: React.FC<ProjectSandboxProps> = ({ code, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-8 bg-black/95 backdrop-blur-2xl animate-in fade-in duration-500">
-      <div className="w-full h-full max-w-7xl km-glass-card rounded-[2rem] border border-[#d4af37]/30 flex flex-col overflow-hidden shadow-[0_0_100px_rgba(212,175,55,0.2)]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 bg-black/95 backdrop-blur-xl animate-in fade-in duration-300">
+      <div className="w-full h-full max-w-6xl km-glass-card rounded-2xl border border-[#d4af37]/20 flex flex-col overflow-hidden shadow-2xl">
         
         {/* Sandbox Header */}
-        <div className="flex items-center justify-between px-6 md:px-10 py-6 border-b border-[#d4af37]/10 bg-[#080808]">
-          <div className="flex items-center gap-5">
-            <div className="p-3 bg-[#d4af37]/10 rounded-2xl border border-[#d4af37]/20">
-              <Code2 className="text-[#d4af37]" size={24} />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#d4af37]/5 bg-[#080808]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-[#d4af37]/10 rounded-xl border border-[#d4af37]/10">
+              <Code2 className="text-[#d4af37]" size={16} />
             </div>
             <div>
-              <h3 className="text-[#d4af37] font-black text-lg km-gold-text-glow tracking-tighter uppercase">ChatBank Build Auditor</h3>
-              <p className="text-[10px] text-gray-500 font-bold flex items-center gap-2">
-                <Cpu size={10} /> CHATBANK VITE + REACT 19 OPTIMIZED
+              <h3 className="text-[#d4af37] font-black text-xs km-gold-text-glow tracking-tighter uppercase">ChatBank Build Auditor</h3>
+              <p className="text-[7px] text-gray-600 font-bold flex items-center gap-1 uppercase tracking-tighter">
+                <Cpu size={8} /> CHATBANK REACT 19 OPTIMIZED
               </p>
             </div>
           </div>
           
-          <div className="flex items-center gap-4 md:gap-8">
+          <div className="flex items-center gap-4">
             <button 
               onClick={onClose} 
-              className="p-3 hover:bg-red-500/10 rounded-2xl text-gray-400 hover:text-red-500 transition-all active:scale-90"
-              title="الرجوع لشاتبنك"
+              className="p-2 hover:bg-red-500/10 rounded-xl text-gray-500 hover:text-red-500 transition-all active:scale-90"
             >
-              <X size={28} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -175,40 +174,9 @@ const ProjectSandbox: React.FC<ProjectSandboxProps> = ({ code, onClose }) => {
           
           {/* Audit Overlay */}
           {isAuditing && (
-            <div className="absolute inset-0 bg-[#050505]/90 backdrop-blur-md z-30 flex flex-col items-center justify-center p-10">
-              <Loader2 className="text-[#d4af37] animate-spin mb-6" size={64} />
-              <h4 className="text-[#d4af37] font-black text-2xl mb-6 km-gold-text-glow">جاري فحص مشروع شاتبنك...</h4>
-            </div>
-          )}
-
-          {/* GitHub Tool Overlay */}
-          {showGithubModal && (
-            <div className="absolute inset-0 bg-black/80 backdrop-blur-2xl z-20 flex items-center justify-center p-4">
-              <div className="max-w-md w-full km-glass-card rounded-[2.5rem] p-10 border border-[#d4af37]/40">
-                <h4 className="text-[#d4af37] font-black text-2xl mb-6">تصدير لمستودع شاتبنك</h4>
-                <div className="space-y-6">
-                  <input 
-                    type="password" 
-                    value={ghToken} 
-                    onChange={(e) => setGhToken(e.target.value)}
-                    placeholder="Personal Access Token"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-[#d4af37] outline-none"
-                  />
-                  <input 
-                    type="text" 
-                    value={repoName} 
-                    onChange={(e) => setRepoName(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm text-white focus:border-[#d4af37] outline-none"
-                  />
-                  <button 
-                    onClick={handleGithubDeploy}
-                    className="w-full bg-[#d4af37] text-black font-black py-5 rounded-[1.5rem] hover:bg-[#b8962d] km-gold-glow active:scale-95 transition-all"
-                  >
-                    نشر المشروع في شاتبنك
-                  </button>
-                  <button onClick={() => setShowGithubModal(false)} className="w-full text-gray-500 py-2">إلغاء</button>
-                </div>
-              </div>
+            <div className="absolute inset-0 bg-[#050505]/95 backdrop-blur-md z-30 flex flex-col items-center justify-center p-8">
+              <Loader2 className="text-[#d4af37] animate-spin mb-4" size={40} />
+              <h4 className="text-[#d4af37] font-black text-lg mb-4 km-gold-text-glow">جاري فحص مشروع شاتبنك...</h4>
             </div>
           )}
         </div>

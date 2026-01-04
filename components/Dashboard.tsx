@@ -31,7 +31,6 @@ const Dashboard: React.FC = () => {
       setRepairs(prev => [messages[Math.floor(Math.random() * messages.length)], ...prev.slice(0, 1)]);
     }, 5000);
 
-    // Get count of projects from localStorage
     const sessions = JSON.parse(localStorage.getItem('muntasir_sessions_v1') || '[]');
     setRepoCount(sessions.length);
 
@@ -39,82 +38,82 @@ const Dashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 mb-8 animate-in fade-in slide-in-from-top duration-700">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="flex flex-col gap-3 mb-6 animate-in fade-in slide-in-from-top duration-500">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Status Cards */}
-        <div className="km-glass-card p-4 rounded-2xl border-r-4 border-r-[#d4af37] relative overflow-hidden">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#d4af37]/10 rounded-xl">
-              <ShieldCheck className="text-[#d4af37]" size={20} />
+        <div className="km-glass-card p-3 rounded-xl border-r-2 border-r-[#d4af37] relative overflow-hidden">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-[#d4af37]/10 rounded-lg">
+              <ShieldCheck className="text-[#d4af37]" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase font-bold">الأمان السيادي</p>
-              <h4 className="text-sm font-black text-white km-gold-text-glow">مشفر بنسبة 100%</h4>
+              <p className="text-[7px] text-gray-500 uppercase font-bold tracking-tighter">الأمان السيادي</p>
+              <h4 className="text-[10px] font-black text-white km-gold-text-glow">مشفر 100%</h4>
             </div>
           </div>
         </div>
 
-        <div className="km-glass-card p-4 rounded-2xl border-r-4 border-r-[#d4af37]">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#d4af37]/10 rounded-xl">
-              <Zap className="text-[#d4af37]" size={20} />
+        <div className="km-glass-card p-3 rounded-xl border-r-2 border-r-[#d4af37]">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-[#d4af37]/10 rounded-lg">
+              <Zap className="text-[#d4af37]" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase font-bold">سرعة الاستجابة</p>
-              <h4 className="text-sm font-black text-white font-mono">{status.latency}ms</h4>
+              <p className="text-[7px] text-gray-500 uppercase font-bold tracking-tighter">الاستجابة</p>
+              <h4 className="text-[10px] font-black text-white font-mono">{status.latency}ms</h4>
             </div>
           </div>
         </div>
 
-        <div className="km-glass-card p-4 rounded-2xl border-r-4 border-r-[#d4af37]">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#d4af37]/10 rounded-xl">
-              <Database className="text-[#d4af37]" size={20} />
+        <div className="km-glass-card p-3 rounded-xl border-r-2 border-r-[#d4af37]">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-[#d4af37]/10 rounded-lg">
+              <Database className="text-[#d4af37]" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase font-bold">المشاريع المنبثقة</p>
-              <h4 className="text-sm font-black text-white">{repoCount} مستودع نشط</h4>
+              <p className="text-[7px] text-gray-500 uppercase font-bold tracking-tighter">المستودعات</p>
+              <h4 className="text-[10px] font-black text-white">{repoCount} نشط</h4>
             </div>
           </div>
         </div>
 
-        <div className="km-glass-card p-4 rounded-2xl border-r-4 border-r-[#d4af37]">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#d4af37]/10 rounded-xl">
-              <Cpu className="text-[#d4af37]" size={20} />
+        <div className="km-glass-card p-3 rounded-xl border-r-2 border-r-[#d4af37]">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-[#d4af37]/10 rounded-lg">
+              <Cpu className="text-[#d4af37]" size={14} />
             </div>
             <div>
-              <p className="text-[10px] text-gray-500 uppercase font-bold">الذكاء الفعال</p>
-              <h4 className="text-sm font-black text-white font-mono">{status.iqLevel}.9%</h4>
+              <p className="text-[7px] text-gray-500 uppercase font-bold tracking-tighter">الذكاء الفعال</p>
+              <h4 className="text-[10px] font-black text-white font-mono">{status.iqLevel}.9%</h4>
             </div>
           </div>
         </div>
       </div>
 
       {/* Repair & Monitor System */}
-      <div className="km-glass-card p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4 border border-[#d4af37]/10">
-        <div className="flex items-center gap-4 flex-1 min-w-[300px]">
-          <div className="flex items-center gap-2">
-            <RefreshCw className="text-[#d4af37] animate-spin text-sm" size={14} />
-            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">نظام المراقبة والإصلاح الذاتي:</span>
+      <div className="km-glass-card p-2.5 rounded-xl flex flex-wrap items-center justify-between gap-3 border border-[#d4af37]/5">
+        <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center gap-1.5">
+            <RefreshCw className="text-[#d4af37] animate-spin" size={10} />
+            <span className="text-[8px] font-bold text-gray-500 uppercase tracking-tight">نظام المراقبة:</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             {repairs.map((msg, i) => (
-              <span key={i} className="text-[11px] text-[#d4af37] font-medium bg-[#d4af37]/5 px-3 py-1 rounded-full animate-in fade-in slide-in-from-right duration-500">
+              <span key={i} className="text-[8px] text-[#d4af37] font-medium bg-[#d4af37]/5 px-2 py-0.5 rounded-md animate-in fade-in slide-in-from-right duration-500">
                 {msg}
               </span>
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <Globe size={12} className="text-green-500" />
-            <span className="text-[10px] font-bold text-gray-500">اتصال GitHub: مستقر</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <Globe size={10} className="text-green-500/70" />
+            <span className="text-[8px] font-bold text-gray-600">GitHub: مستقر</span>
           </div>
-          <div className="w-[1px] h-4 bg-white/10"></div>
-          <div className="flex items-center gap-1.5">
-            <Settings size={12} className="text-[#d4af37]" />
-            <span className="text-[10px] font-bold text-gray-500">Vite Engine: Active</span>
+          <div className="w-[1px] h-3 bg-white/5"></div>
+          <div className="flex items-center gap-1">
+            <Settings size={10} className="text-[#d4af37]/70" />
+            <span className="text-[8px] font-bold text-gray-600">Vite: Active</span>
           </div>
         </div>
       </div>

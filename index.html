@@ -1,6 +1,6 @@
 
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" style="font-size: 11px;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,7 +26,7 @@
             flex-direction: column;
         }
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 5px;
         }
         ::-webkit-scrollbar-track {
             background: #050505;
@@ -36,17 +36,16 @@
             border-radius: 4px;
         }
         .km-gold-glow {
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.2);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
         }
         .km-gold-text-glow {
-            text-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+            text-shadow: 0 0 5px rgba(212, 175, 55, 0.4);
         }
         .km-glass-card {
             background: rgba(15, 15, 15, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(212, 175, 55, 0.15);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(212, 175, 55, 0.1);
         }
-        /* Loading animation for initial splash */
         .initial-loader {
             position: fixed;
             inset: 0;
@@ -75,25 +74,13 @@
 </head>
 <body>
     <div id="root">
-        <!-- شاشة تحميل مؤقتة تظهر فقط إذا تأخر الكود في العمل -->
         <div class="initial-loader" id="km-splash">
-            <div style="width: 60px; height: 60px; border: 3px solid #d4af37; border-top-color: transparent; border-radius: 50%; animate: spin 1s linear infinite;"></div>
+            <div style="width: 40px; height: 40px; border: 2px solid #d4af37; border-top-color: transparent; border-radius: 50%; animate: spin 1s linear infinite;"></div>
             <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-            <h1 style="color: #d4af37; margin-top: 20px; font-weight: 900; letter-spacing: -1px;">CHATBANK</h1>
-            <p style="color: #444; font-size: 10px; margin-top: 10px; text-transform: uppercase;">Sovereign Protocol Initiating...</p>
+            <h1 style="color: #d4af37; margin-top: 15px; font-weight: 900; letter-spacing: -1px; font-size: 1.5rem;">CHATBANK</h1>
+            <p style="color: #444; font-size: 8px; margin-top: 5px; text-transform: uppercase;">Sovereign Protocol Initiating...</p>
         </div>
     </div>
-    <!-- الربط الصريح بملف التشغيل -->
     <script type="module" src="./index.tsx"></script>
-    <script>
-        // إخفاء شاشة التحميل بمجرد تحميل React
-        window.addEventListener('DOMContentLoaded', () => {
-            const splash = document.getElementById('km-splash');
-            if (splash) {
-                // سيتم إزالته من قبل React عند عمل الـ Mount، ولكن هذا للأمان
-                setTimeout(() => { splash.style.opacity = '0'; }, 2000);
-            }
-        });
-    </script>
 </body>
 </html>
