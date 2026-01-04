@@ -4,7 +4,7 @@ import {
   Send, Search, Zap, Crown, Trash2, Loader2, 
   Link as LinkIcon, Camera, Plus, MessageSquare, 
   Database, Code, Eye, Activity, ChevronRight, Menu,
-  Type, Minus, Plus as PlusIcon, BrainCircuit, Server
+  Type, Minus, Plus as PlusIcon, BrainCircuit, Server, AlertTriangle
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import VoiceInterface from './components/VoiceInterface';
@@ -132,17 +132,33 @@ const App: React.FC = () => {
       let modelResponse: Message;
 
       if (mode === EngineMode.LOCAL_X1) {
-        const result = await muntasirGenerateLocalContent(currentInput);
-        modelResponse = {
-          id: Date.now().toString(),
-          role: 'model',
-          content: [{ text: result.text }],
-          mode,
-          timestamp: Date.now()
-        };
+        try {
+          const result = await muntasirGenerateLocalContent(currentInput);
+          modelResponse = {
+            id: Date.now().toString(),
+            role: 'model',
+            content: [{ text: result.text }],
+            mode,
+            timestamp: Date.now()
+          };
+        } catch (localErr: any) {
+          if (localErr.message === "LOCAL_CORE_UNREACHABLE") {
+            // Fallback strategy for local failure
+            setMode(EngineMode.FLASH);
+            const result = await muntasirGenerateContent(currentInput, EngineMode.FLASH, currentImage || undefined, useSearch);
+            modelResponse = {
+              id: Date.now().toString(),
+              role: 'model',
+              content: [{ text: `⚠️ تنبيه سيادي: النواة المحلية X-1 غير مستجيبة. تم تفعيل بروتوكول الطوارئ عبر القناة السحابية (FLASH) لضمان الاستمرارية.\n\n${result.text}` }],
+              mode: EngineMode.FLASH,
+              timestamp: Date.now()
+            };
+          } else throw localErr;
+        }
       } else {
         const isImageGen = currentInput.toLowerCase().includes('ولد صورة') || 
                            currentInput.toLowerCase().includes('ارسم') || 
+                           currentInput.toLowerCase().includes('صورة ل') ||
                            currentInput.toLowerCase().includes('generate image');
 
         if (isImageGen) {
@@ -170,9 +186,18 @@ const App: React.FC = () => {
       setIsThinking(false);
       setBuildProgress(100);
       updateSessionMessages([...newMessages, modelResponse]);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      updateSessionMessages([...newMessages, { id: Date.now().toString(), role: 'model', content: [{ text: "⚠️ خلل في بروتوكول الاتصال. تأكد من تشغيل النواة المحلية (sovereign_server.py)." }], timestamp: Date.now() }]);
+      let errorMsg = "⚠️ حدث خلل غير متوقع في المعالجة السيادية.";
+      if (error.message === "CLOUD_API_KEY_ERROR") errorMsg = "⚠️ خطأ في مفتاح API السحابي. يرجى مراجعة إعدادات المشروع.";
+      if (error.message === "IMAGE_GEN_FAILED") errorMsg = "⚠️ فشل توليد الصورة السيادية. قد تكون القيود الفنية هي السبب.";
+      
+      updateSessionMessages([...newMessages, { 
+        id: Date.now().toString(), 
+        role: 'model', 
+        content: [{ text: errorMsg }], 
+        timestamp: Date.now() 
+      }]);
     } finally {
       setIsThinking(false);
       clearInterval(progressInterval);
@@ -181,7 +206,7 @@ const App: React.FC = () => {
   };
 
   const detectCode = (text: string) => {
-    const codeBlockRegex = /```(?:html|javascript|css)?([\s\S]*?)```/g;
+    const codeBlockRegex = /```(?:html|javascript|css|react)?([\s\S]*?)```/g;
     const match = codeBlockRegex.exec(text);
     return match ? match[1] : null;
   };
@@ -252,11 +277,14 @@ const App: React.FC = () => {
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in slide-in-from-bottom-3 duration-500`}>
                 <div className={`max-w-[90%] md:max-w-[80%] p-5 rounded-2xl relative shadow-xl ${msg.role === 'user' ? 'bg-[#d4af37]/5 border border-[#d4af37]/10' : 'km-glass-card'}`}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className={`w-1.5 h-1.5 rounded-full ${msg.role === 'user' ? 'bg-white' : 'bg-[#d4af37] animate-pulse'}`}></div>
-                    <span className={`text-[7px] font-black uppercase tracking-[0.2em] ${msg.role === 'user' ? 'text-white/30' : 'text-[#d4af37]'}`}>
-                      {msg.role === 'user' ? 'SOVEREIGN USER' : `${msg.mode === EngineMode.LOCAL_X1 ? 'LOCAL CORE X1' : 'CHATBANK CORE'}`}
-                    </span>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-1.5 h-1.5 rounded-full ${msg.role === 'user' ? 'bg-white' : 'bg-[#d4af37] animate-pulse'}`}></div>
+                      <span className={`text-[7px] font-black uppercase tracking-[0.2em] ${msg.role === 'user' ? 'text-white/30' : 'text-[#d4af37]'}`}>
+                        {msg.role === 'user' ? 'SOVEREIGN USER' : `${msg.mode === EngineMode.LOCAL_X1 ? 'LOCAL CORE X1' : 'CHATBANK CORE'}`}
+                      </span>
+                    </div>
+                    {msg.content[0].text?.includes('⚠️') && <AlertTriangle size={10} className="text-yellow-500" />}
                   </div>
                   
                   {msg.content.map((part, i) => (
@@ -289,7 +317,7 @@ const App: React.FC = () => {
                    <div className="flex items-center gap-2">
                      {isThinking ? <BrainCircuit size={12} className="text-[#d4af37] animate-pulse" /> : <Loader2 size={11} className="text-[#d4af37] animate-spin" />}
                      <span className="text-[8px] font-black text-[#d4af37] uppercase tracking-[0.2em]">
-                       {isThinking ? (mode === EngineMode.LOCAL_X1 ? "معالجة عبر النواة المحلية X-1..." : "المنطق السيادي قيد التحليل...") : "جاري البناء..."}
+                       {isThinking ? (mode === EngineMode.LOCAL_X1 ? "محاولة الربط بالنواة المحلية X-1..." : "المنطق السيادي قيد التحليل...") : "جاري البناء..."}
                      </span>
                    </div>
                    <span className="text-[8px] font-black text-[#d4af37] font-mono">{Math.round(buildProgress)}%</span>
