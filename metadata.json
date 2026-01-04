@@ -1,0 +1,8 @@
+{
+  "name": "ChatBank",
+  "description": "The exclusive sovereign AI platform for Khalid Al-Muntasir, powered by the ChatBank engine with Flash/Ultra intelligence.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
