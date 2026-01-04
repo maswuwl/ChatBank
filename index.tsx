@@ -11,15 +11,15 @@ if (!rootElement) {
 
 const root = ReactDOM.createRoot(rootElement);
 
-// وظيفة لإزالة شاشة التحميل بسلاسة
+// وظيفة لإزالة شاشة التحميل بسلاسة تامة ومنع حجب اللمس
 const hideSplashScreen = () => {
   const splash = document.getElementById('km-splash');
   if (splash) {
-    splash.classList.add('hidden');
-    // إزالة العنصر تماماً من الـ DOM بعد انتهاء الحركة لتفادي حجب اللمس
+    splash.style.opacity = '0';
+    splash.style.pointerEvents = 'none';
     setTimeout(() => {
       splash.remove();
-    }, 600);
+    }, 500);
   }
 };
 
@@ -29,5 +29,10 @@ root.render(
   </React.StrictMode>
 );
 
-// استدعاء الإخفاء بعد وقت قصير من الـ render
-setTimeout(hideSplashScreen, 1000);
+// استدعاء الإخفاء بعد استقرار التطبيق
+window.addEventListener('load', () => {
+  setTimeout(hideSplashScreen, 800);
+});
+
+// تأمين الإخفاء في حال فشل حدث الـ load
+setTimeout(hideSplashScreen, 2000);

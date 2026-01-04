@@ -22,7 +22,8 @@ export interface Message {
   mode?: EngineMode;
   timestamp: number;
   sources?: GroundingSource[];
-  isThinking?: boolean;
+  latencyMs?: number;
+  modelName?: string;
 }
 
 export interface MissionSession {
@@ -32,9 +33,12 @@ export interface MissionSession {
   lastUpdated: number;
 }
 
-export interface SystemStatus {
-  health: 'Optimal' | 'Degraded' | 'Offline';
-  latency: number;
-  iqLevel: number;
-  gpuLoad?: number;
+export interface EngineResult {
+  text: string;
+  sources?: GroundingSource[];
+  meta: {
+    model: string;
+    mode: EngineMode;
+    latencyMs: number;
+  };
 }

@@ -2,14 +2,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, Search, Trash2, Loader2, Camera, Plus, MessageSquare, 
-  Database, Eye, Menu, X, BrainCircuit, ShieldCheck, 
-  LayoutGrid, Settings, Info, Bell
+  Database, Eye, X, BrainCircuit, Settings, Cpu, Globe, Zap
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import VoiceInterface from './components/VoiceInterface';
 import ProjectSandbox from './components/ProjectSandbox';
 import { EngineMode, Message, MissionSession } from './core/types';
-import { muntasirGenerateContent, muntasirGenerateLocalContent } from './core/engine/geminiService';
+import { muntasirGenerateContent } from './core/engine/geminiService';
 
 const STORAGE_KEY = 'chatbank_sovereign_v3';
 
@@ -40,39 +39,22 @@ const App: React.FC = () => {
       } catch (e) { console.error("Init Error", e); }
     }
     setIsLoaded(true);
-    setTimeout(() => document.getElementById('km-splash')?.classList.add('hidden'), 800);
   }, []);
 
   useEffect(() => {
     if (isLoaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
+    if (messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
   }, [sessions, isLoaded]);
 
   const currentSession = sessions.find(s => s.id === currentSessionId);
   const messages = currentSession?.messages || [];
-
-  const createNewMission = () => {
-    if (sessions.length > 0 && sessions[0].messages.length === 0) {
-      setCurrentSessionId(sessions[0].id);
-      setSidebarOpen(false);
-      return;
-    }
-    const newSession: MissionSession = {
-      id: Date.now().toString(),
-      title: `مهمة ${sessions.length + 1}`,
-      messages: [],
-      lastUpdated: Date.now()
-    };
-    setSessions(prev => [newSession, ...prev]);
-    setCurrentSessionId(newSession.id);
-    setSidebarOpen(false);
-  };
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isProcessing) return;
 
     let targetId = currentSessionId;
     if (!targetId) {
-      const newS: MissionSession = { id: Date.now().toString(), title: input.substring(0, 15), messages: [], lastUpdated: Date.now() };
+      const newS: MissionSession = { id: Date.now().toString(), title: input.substring(0, 15) || "مهمة سيادية", messages: [], lastUpdated: Date.now() };
       setSessions([newS]);
       setCurrentSessionId(newS.id);
       targetId = newS.id;
@@ -94,23 +76,27 @@ const App: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      let resMsg: Message;
-      if (mode === EngineMode.LOCAL_X1) {
-        try {
-          const res = await muntasirGenerateLocalContent(currentInput);
-          resMsg = { id: Date.now().toString(), role: 'model', content: [{ text: res.text }], mode, timestamp: Date.now() };
-        } catch {
-          const res = await muntasirGenerateContent(currentInput, EngineMode.FLASH, currentImage || undefined, useSearch);
-          resMsg = { id: Date.now().toString(), role: 'model', content: [{ text: `⚠️ النواة المحلية غير متوفرة. تم التبديل لـ FLASH.\n\n${res.text}` }], mode: EngineMode.FLASH, timestamp: Date.now() };
-        }
-      } else {
-        const res = await muntasirGenerateContent(currentInput, mode, currentImage || undefined, useSearch);
-        resMsg = { id: Date.now().toString(), role: 'model', content: [{ text: res.text }], mode, timestamp: Date.now(), sources: res.sources };
-      }
+      const result = await muntasirGenerateContent(currentInput, mode, {
+        imageBase64: currentImage || undefined,
+        search: useSearch
+      });
+
+      const resMsg: Message = {
+        id: Date.now().toString(),
+        role: 'model',
+        content: [{ text: result.text }],
+        mode: result.meta.mode,
+        timestamp: Date.now(),
+        sources: result.sources,
+        latencyMs: result.meta.latencyMs,
+        modelName: result.meta.model
+      };
+
       setSessions(prev => prev.map(s => s.id === targetId ? { ...s, messages: [...s.messages, resMsg] } : s));
+    } catch (err: any) {
+       console.error(err);
     } finally {
       setIsProcessing(false);
-      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
   };
 
@@ -118,127 +104,153 @@ const App: React.FC = () => {
     <div className="flex h-screen bg-[#050505] text-[#f3f4f6] overflow-hidden relative">
       {activeCodePreview && <ProjectSandbox code={activeCodePreview} onClose={() => setActiveCodePreview(null)} />}
 
-      {/* القائمة الجانبية بتصميم نظيف */}
-      <div className={`fixed inset-0 z-[100] transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)}></div>
-          <aside className={`absolute right-0 top-0 h-full w-72 bg-[#080808] border-l border-[#d4af37]/20 transition-transform duration-300 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
+      {/* Sidebar */}
+      <div className={`fixed inset-0 z-[200] transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSidebarOpen(false)}></div>
+          <aside className={`absolute right-0 top-0 h-full w-72 bg-[#080808] border-l border-[#d4af37]/20 transition-transform duration-500 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
               <div className="p-6 flex items-center justify-between border-b border-white/5">
-                  <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-[#d4af37] rounded-lg flex items-center justify-center text-black font-black">CB</div>
-                      <span className="text-xs font-black text-[#d4af37] tracking-widest uppercase">بنك المستودعات</span>
+                  <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-[#d4af37] rounded-xl flex items-center justify-center text-black font-black">CB</div>
+                      <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-widest">بنك المستودعات</span>
                   </div>
-                  <button onClick={() => setSidebarOpen(false)} className="p-2 text-gray-500 hover:text-white transition-all"><X size={20} /></button>
+                  <button onClick={() => setSidebarOpen(false)} className="p-2 text-gray-500 hover:text-white transition-all"><X size={22} /></button>
               </div>
-              
-              <div className="p-4">
-                  <button onClick={createNewMission} className="w-full py-3 bg-[#d4af37] text-black font-black text-[10px] rounded-xl flex items-center justify-center gap-2 km-button-active shadow-lg shadow-[#d4af37]/10 uppercase">
+              <div className="p-4 flex flex-col flex-1 overflow-hidden">
+                  <button onClick={() => { 
+                    const newS = { id: Date.now().toString(), title: "مهمة جديدة", messages: [], lastUpdated: Date.now() };
+                    setSessions(p => [newS, ...p]); setCurrentSessionId(newS.id); setSidebarOpen(false);
+                  }} className="w-full py-3.5 bg-[#d4af37] text-black font-black text-[10px] rounded-xl flex items-center justify-center gap-2 km-button-active shadow-lg shadow-[#d4af37]/10 mb-6 uppercase">
                     <Plus size={16} /> مهمة جديدة
                   </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 custom-scrollbar">
-                  {sessions.map(s => (
-                    <div 
-                      key={s.id} 
-                      onClick={() => { setCurrentSessionId(s.id); setSidebarOpen(false); }}
-                      className={`group p-3 rounded-xl cursor-pointer border transition-all flex items-center justify-between ${currentSessionId === s.id ? 'bg-[#d4af37]/10 border-[#d4af37]/40 text-[#d4af37]' : 'border-transparent hover:bg-white/5 text-gray-500'}`}
-                    >
-                      <div className="flex items-center gap-3 overflow-hidden">
-                        <MessageSquare size={14} />
-                        <span className="text-[10px] font-bold truncate">{s.title}</span>
-                      </div>
-                      <button onClick={(e) => { e.stopPropagation(); setSessions(prev => prev.filter(ses => ses.id !== s.id)); }} className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400"><Trash2 size={12} /></button>
-                    </div>
-                  ))}
+                  <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                      {sessions.map(s => (
+                        <div key={s.id} onClick={() => { setCurrentSessionId(s.id); setSidebarOpen(false); }} className={`p-3.5 rounded-xl cursor-pointer border transition-all flex items-center justify-between ${currentSessionId === s.id ? 'bg-[#d4af37]/10 border-[#d4af37]/40 text-[#d4af37]' : 'border-transparent hover:bg-white/5 text-gray-500'}`}>
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <MessageSquare size={14} />
+                            <span className="text-[10px] font-bold truncate">{s.title}</span>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); setSessions(prev => prev.filter(ses => ses.id !== s.id)); }} className="opacity-0 hover:opacity-100 p-1.5 hover:text-red-400"><Trash2 size={12} /></button>
+                        </div>
+                      ))}
+                  </div>
               </div>
           </aside>
       </div>
 
       <main className="flex-1 flex flex-col relative z-10 min-w-0">
-        {/* هيدر مُعاد ترتيبه لمنع التداخل */}
-        <header className="h-14 md:h-16 flex items-center justify-between px-4 md:px-8 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md">
-          <div className="flex items-center gap-3 md:gap-4">
-            <button onClick={() => setSidebarOpen(true)} className="p-2.5 bg-white/5 rounded-xl text-[#d4af37] km-button-active hover:bg-[#d4af37]/10" title="المستودعات">
-              <Database size={18} />
+        <header className="h-16 md:h-20 flex items-center justify-between px-4 md:px-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl sticky top-0 z-[150]">
+          <div className="flex items-center gap-4">
+            <button onClick={() => setSidebarOpen(true)} className="p-3 bg-white/5 rounded-xl text-[#d4af37] border border-white/5 hover:border-[#d4af37]/40 transition-all km-button-active">
+              <Database size={20} />
             </button>
-            <button onClick={() => setUseSearch(!useSearch)} className={`p-2.5 rounded-xl border transition-all km-button-active ${useSearch ? 'bg-[#d4af37]/20 border-[#d4af37] text-[#d4af37]' : 'bg-white/5 border-transparent text-gray-500'}`} title="بحث جوجل">
-              <Search size={18} />
+            <button onClick={() => setUseSearch(!useSearch)} className={`p-3 rounded-xl border transition-all km-button-active ${useSearch ? 'bg-[#d4af37]/20 border-[#d4af37] text-[#d4af37]' : 'bg-white/5 border-transparent text-gray-500'}`}>
+              <Search size={20} />
             </button>
+            <select 
+              value={mode} 
+              onChange={(e) => setMode(e.target.value as EngineMode)}
+              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black text-[#d4af37] outline-none"
+            >
+              <option value={EngineMode.FLASH}>FLASH CORE</option>
+              <option value={EngineMode.ULTRA}>ULTRA (THINKING)</option>
+              <option value={EngineMode.LOCAL_X1}>LOCAL X1</option>
+            </select>
           </div>
 
-          <div className="flex flex-col items-center">
-             <span className="text-[10px] font-black text-[#d4af37] tracking-[0.2em] uppercase">ChatBank</span>
-             <span className="text-[7px] text-gray-500 font-bold uppercase tracking-widest hidden sm:block">Sovereign Intelligence</span>
-          </div>
-
-          <div className="flex items-center gap-3">
-             <div className="hidden md:flex gap-1.5 mr-4">
-                {[EngineMode.FLASH, EngineMode.ULTRA].map(m => (
-                  <button key={m} onClick={() => setMode(m)} className={`px-2.5 py-1 rounded-md text-[7px] font-black transition-all border ${mode === m ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-white/5 text-gray-500 border-transparent hover:border-white/10 uppercase'}`}>
-                    {m.split('-')[1]}
-                  </button>
-                ))}
+          <div className="flex flex-col items-center select-none">
+             <div className="flex items-center gap-2 mb-0.5">
+                <Cpu size={14} className="text-[#d4af37] animate-pulse" />
+                <span className="text-[14px] font-black text-[#d4af37] tracking-[0.4em] uppercase">ChatBank</span>
              </div>
-             <div className="flex items-center gap-2.5 bg-white/5 px-2.5 py-1.5 rounded-xl border border-white/10">
-                <div className="w-6 h-6 rounded-md bg-gradient-to-tr from-[#d4af37] to-[#b8962d] flex items-center justify-center text-black text-[9px] font-black">خ</div>
-                <span className="text-[8px] font-black text-gray-400 hidden sm:block uppercase">K. Al-Muntasir</span>
+          </div>
+
+          <div className="hidden md:flex items-center gap-3">
+             <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
+                <div className="w-6 h-6 rounded-md bg-[#d4af37] flex items-center justify-center text-black text-[10px] font-black">K</div>
+                <span className="text-[9px] font-black text-gray-400 uppercase">Sovereign Mode</span>
              </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 md:px-12 py-6 space-y-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-4 md:px-16 lg:px-24 py-8 space-y-10 custom-scrollbar">
           <Dashboard />
           <VoiceInterface />
 
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center opacity-10 py-20 select-none">
-              <BrainCircuit size={100} className="text-[#d4af37] mb-6 animate-pulse" />
-              <h2 className="text-2xl font-black uppercase tracking-[0.4em]">Sovereign Core</h2>
-              <p className="text-[9px] mt-3 font-bold uppercase tracking-widest text-[#d4af37]">System Ready for Command Protocol</p>
+            <div className="h-[60vh] flex flex-col items-center justify-center text-center opacity-30">
+              <BrainCircuit size={120} className="text-[#d4af37] mb-6 animate-pulse" />
+              <h2 className="text-3xl font-black uppercase tracking-[0.5em] text-[#d4af37]">Sovereign IQ</h2>
+              <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Ready for Command Protocol</p>
             </div>
           ) : (
-            <div className="space-y-8 max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto space-y-10 pb-20">
               {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-4`}>
-                  <div className={`max-w-[92%] md:max-w-[85%] p-6 rounded-3xl ${msg.role === 'user' ? 'bg-[#d4af37]/10 border border-[#d4af37]/20 shadow-xl' : 'km-glass shadow-2xl relative'}`}>
-                    <div className="flex items-center gap-2 mb-4 opacity-40">
-                      <div className={`w-1.5 h-1.5 rounded-full ${msg.role === 'user' ? 'bg-white' : 'bg-[#d4af37]'}`}></div>
-                      <span className="text-[7px] font-black uppercase tracking-[0.2em]">{msg.role === 'user' ? 'Sovereign' : 'AI Engine'}</span>
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-6`}>
+                  <div className={`max-w-[95%] md:max-w-[85%] p-6 md:p-8 rounded-[2.5rem] shadow-2xl ${msg.role === 'user' ? 'bg-[#d4af37]/5 border border-[#d4af37]/20' : 'km-glass border border-white/5'}`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3 opacity-40">
+                            <div className={`w-2 h-2 rounded-full ${msg.role === 'user' ? 'bg-white' : 'bg-[#d4af37]'}`}></div>
+                            <span className="text-[8px] font-black uppercase tracking-widest">{msg.role === 'user' ? 'Khalid Muntasir' : 'Sovereign Core'}</span>
+                        </div>
+                        {msg.latencyMs && (
+                            <div className="flex items-center gap-2 opacity-30 text-[7px] font-bold uppercase">
+                                <Zap size={8} /> {msg.latencyMs}ms | {msg.modelName}
+                            </div>
+                        )}
                     </div>
                     {msg.content.map((c, i) => (
-                      <div key={i} className="space-y-4">
-                        {c.text && <p className="text-[11px] md:text-[12px] leading-relaxed whitespace-pre-wrap text-gray-200">{c.text}</p>}
+                      <div key={i} className="space-y-6">
+                        {c.text && <p className="text-[13px] md:text-[14px] leading-relaxed whitespace-pre-wrap text-gray-200 font-medium">{c.text}</p>}
                         {c.text && /```(?:html|javascript|css|react)?([\s\S]*?)```/g.test(c.text) && (
                            <button onClick={() => {
                              const match = /```(?:html|javascript|css|react)?([\s\S]*?)```/g.exec(c.text || "");
                              if(match) setActiveCodePreview(match[1]);
-                           }} className="w-full flex items-center justify-center gap-2 py-4 bg-[#d4af37] text-black rounded-2xl font-black text-[10px] km-button-active shadow-xl shadow-[#d4af37]/10 uppercase tracking-widest">
-                             <Eye size={18} /> معاينة المشروع
+                           }} className="w-full mt-6 flex items-center justify-center gap-4 py-4 bg-[#d4af37] text-black rounded-2xl font-black text-[11px] km-button-active shadow-2xl hover:bg-[#b8962d] transition-all uppercase tracking-widest">
+                             <Eye size={18} /> معاينة الحل السيادي
                            </button>
                         )}
-                        {c.image && <img src={c.image} className="rounded-2xl border border-white/5 shadow-2xl max-w-full" />}
+                        {c.image && <img src={c.image} className="rounded-3xl border border-white/10 shadow-2xl" />}
                       </div>
                     ))}
+
+                    {msg.sources && msg.sources.length > 0 && (
+                        <div className="mt-6 pt-4 border-t border-white/5">
+                            <div className="flex items-center gap-2 mb-3 opacity-50">
+                                <Globe size={10} className="text-[#d4af37]" />
+                                <span className="text-[8px] font-black uppercase tracking-widest">المصادر المسترجعة:</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {msg.sources.map((src, idx) => (
+                                    <a key={idx} href={src.uri} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-[#d4af37] hover:bg-[#d4af37]/10 transition-all flex items-center gap-2">
+                                        <div className="w-1 h-1 bg-[#d4af37] rounded-full"></div>
+                                        {src.title}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                   </div>
                 </div>
               ))}
+              <div ref={messagesEndRef} className="h-10" />
             </div>
           )}
-          <div ref={messagesEndRef} className="h-4" />
         </div>
 
-        {/* منطقة الإدخال الاحترافية */}
-        <div className="p-4 md:p-8 bg-gradient-to-t from-[#050505] to-transparent">
-          <div className="max-w-4xl mx-auto flex flex-col gap-4">
+        {/* Input Area */}
+        <div className="p-4 md:p-10 bg-gradient-to-t from-[#050505] to-transparent sticky bottom-0">
+          <div className="max-w-4xl mx-auto relative">
             {isProcessing && (
-              <div className="flex items-center gap-2 px-4 py-1.5 bg-[#d4af37]/5 rounded-full w-fit animate-pulse border border-[#d4af37]/10">
-                <Loader2 size={12} className="text-[#d4af37] animate-spin" />
-                <span className="text-[8px] font-black text-[#d4af37] uppercase tracking-widest">بروتوكول المعالجة نشط...</span>
-              </div>
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-2 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-full animate-pulse">
+                    <Loader2 size={14} className="text-[#d4af37] animate-spin" />
+                    <span className="text-[9px] font-black text-[#d4af37] uppercase tracking-widest">
+                        {mode === EngineMode.ULTRA ? 'النواة تحلل بعمق...' : 'جاري التنفيذ السيادي...'}
+                    </span>
+                </div>
             )}
-            <div className="km-glass p-2.5 rounded-[2rem] flex items-center gap-3 shadow-2xl border-white/10 focus-within:border-[#d4af37]/40 transition-all">
-              <button onClick={() => fileInputRef.current?.click()} className="p-3.5 text-gray-500 hover:text-[#d4af37] transition-all km-button-active bg-white/5 rounded-full" title="صورة">
-                <Camera size={22} />
+            <div className="km-glass p-3 md:p-4 rounded-[2.5rem] flex items-center gap-4 border-white/10 focus-within:border-[#d4af37]/60 transition-all shadow-2xl">
+              <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 text-gray-400 hover:text-[#d4af37] rounded-full transition-all">
+                <Camera size={24} />
               </button>
               <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -249,24 +261,26 @@ const App: React.FC = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="اصدر أوامرك السيادية..."
-                className="flex-1 bg-transparent border-none focus:ring-0 text-xs md:text-sm text-white placeholder-gray-700 outline-none resize-none py-2 px-1 font-bold"
+                placeholder="أدخل أوامرك..."
+                className="flex-1 bg-transparent border-none focus:ring-0 text-[14px] text-white placeholder-gray-800 outline-none resize-none py-3 font-medium"
                 rows={1}
               />
               
               <button 
                 onClick={handleSend}
                 disabled={isProcessing || (!input.trim() && !selectedImage)}
-                className={`p-3.5 md:px-8 rounded-full font-black text-[10px] transition-all flex items-center gap-3 km-button-active ${isProcessing || (!input.trim() && !selectedImage) ? 'bg-gray-800 text-gray-600' : 'bg-[#d4af37] text-black hover:bg-[#b8962d] shadow-xl shadow-[#d4af37]/20 uppercase tracking-widest'}`}
+                className={`p-4 md:px-10 rounded-full font-black text-[11px] transition-all flex items-center gap-4 ${isProcessing || (!input.trim() && !selectedImage) ? 'bg-gray-800 text-gray-600' : 'bg-[#d4af37] text-black shadow-xl shadow-[#d4af37]/30 hover:bg-[#b8962d] uppercase tracking-widest'}`}
               >
-                {isProcessing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                <span className="hidden md:block">تنفيذ</span>
+                {isProcessing ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                <span className="hidden md:block">إرسال</span>
               </button>
             </div>
             {selectedImage && (
-              <div className="relative w-20 h-20 rounded-2xl overflow-hidden border border-[#d4af37]/40 ml-auto shadow-2xl animate-in zoom-in-50">
-                <img src={selectedImage} className="w-full h-full object-cover" />
-                <button onClick={() => setSelectedImage(null)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-md shadow-lg"><X size={12} /></button>
+              <div className="absolute bottom-full left-10 mb-4">
+                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#d4af37]/40">
+                  <img src={selectedImage} className="w-full h-full object-cover" />
+                  <button onClick={() => setSelectedImage(null)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg"><X size={12} /></button>
+                </div>
               </div>
             )}
           </div>

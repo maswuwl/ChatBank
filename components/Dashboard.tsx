@@ -1,30 +1,31 @@
 
 import React, { useState, useEffect } from 'react';
-import { Activity, ShieldCheck, Zap, Database } from 'lucide-react';
+import { Activity, ShieldCheck, Zap, Database, Terminal } from 'lucide-react';
 
 const Dashboard: React.FC = () => {
-  const [latency, setLatency] = useState(5);
+  const [latency, setLatency] = useState(8);
 
   useEffect(() => {
-    const i = setInterval(() => setLatency(Math.floor(Math.random() * 3) + 4), 5000);
+    const i = setInterval(() => setLatency(Math.floor(Math.random() * 5) + 5), 5000);
     return () => clearInterval(i);
   }, []);
 
-  const stats = [
-    { icon: <ShieldCheck size={12} />, label: "حالة السيادة", val: "مستقرة", color: "text-green-500" },
-    { icon: <Zap size={12} />, label: "سرعة الترميم", val: `${latency}ms`, color: "text-[#d4af37]" },
-    { icon: <Database size={12} />, label: "الأصول الرقمية", val: "مؤمنة", color: "text-blue-500" },
-    { icon: <Activity size={12} />, label: "كفاءة العقل", val: "99.9%", color: "text-[#d4af37]" }
+  const items = [
+    { icon: <ShieldCheck size={14} />, label: "Security", val: "Optimal", color: "text-green-500" },
+    { icon: <Zap size={14} />, label: "Response", val: `${latency}ms`, color: "text-[#d4af37]" },
+    { icon: <Database size={14} />, label: "Sovereign Nodes", val: "Encrypted", color: "text-blue-500" },
+    { icon: <Terminal size={14} />, label: "System IQ", val: "Alpha-X1", color: "text-[#d4af37]" },
+    { icon: <Activity size={14} />, label: "Logic Flow", val: "99.9%", color: "text-[#d4af37]" }
   ];
 
   return (
-    <div className="flex flex-wrap gap-2 md:gap-4 mb-2">
-      {stats.map((s, idx) => (
-        <div key={idx} className="flex-1 min-w-[120px] bg-[#0a0a0a] border border-white/5 p-2.5 rounded-2xl flex items-center gap-3 transition-all hover:border-[#d4af37]/20">
-          <div className={`p-2 rounded-lg bg-white/5 ${s.color}`}>{s.icon}</div>
+    <div className="flex items-center gap-4 overflow-x-auto pb-4 custom-scrollbar no-scrollbar flex-nowrap md:justify-center">
+      {items.map((item, idx) => (
+        <div key={idx} className="flex-none bg-[#0a0a0a] border border-white/5 px-5 py-3 rounded-2xl flex items-center gap-4 min-w-[150px] hover:border-[#d4af37]/20 transition-all duration-300 group">
+          <div className={`${item.color} group-hover:scale-110 transition-transform`}>{item.icon}</div>
           <div>
-            <p className="text-[6px] text-gray-600 uppercase font-black tracking-widest mb-0.5">{s.label}</p>
-            <p className={`text-[9px] font-black uppercase ${s.color === 'text-[#d4af37]' ? 'text-white' : s.color}`}>{s.val}</p>
+            <p className="text-[7px] text-gray-600 uppercase font-black tracking-widest mb-0.5">{item.label}</p>
+            <p className="text-[11px] font-black text-white uppercase tracking-tight">{item.val}</p>
           </div>
         </div>
       ))}

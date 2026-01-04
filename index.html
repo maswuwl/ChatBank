@@ -4,44 +4,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ChatBank - الذكاء السيادي</title>
+    <title>ChatBank - Sovereign Intelligence</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --gold: #d4af37;
+            --dark: #050505;
+            --glass: rgba(10, 10, 10, 0.85);
+        }
         body {
             font-family: 'Noto Kufi Arabic', sans-serif;
-            background-color: #050505;
+            background-color: var(--dark);
             color: #f3f4f6;
             margin: 0;
             overflow: hidden;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
         }
-        #root { height: 100vh; display: flex; flex-direction: column; position: relative; }
+        #root { height: 100vh; display: flex; flex-direction: column; }
         
-        .km-glass { background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(212, 175, 55, 0.15); }
-        .km-gold-text { color: #d4af37; text-shadow: 0 0 15px rgba(212, 175, 55, 0.2); }
-        .km-button-active:active { transform: scale(0.92); transition: transform 0.1s; }
+        .km-glass { background: var(--glass); backdrop-filter: blur(25px); border: 1px solid rgba(212, 175, 55, 0.1); }
+        .km-gold-glow { box-shadow: 0 0 20px rgba(212, 175, 55, 0.15); }
+        .km-button-active:active { transform: scale(0.95); transition: all 0.1s ease; }
         
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 20px; }
 
         #km-splash {
             position: fixed;
             inset: 0;
-            background: #050505;
+            background: var(--dark);
             z-index: 10000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.4s ease, visibility 0.4s;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        #km-splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         
-        /* منع التداخل في الجوال */
-        @media (max-width: 640px) {
-            .header-icon-group { gap: 8px; }
+        .sovereign-loader {
+            width: 48px;
+            height: 48px;
+            border: 3px solid rgba(212, 175, 55, 0.1);
+            border-top: 3px solid var(--gold);
+            border-radius: 50%;
+            animation: km-spin 1s cubic-bezier(0.5, 0, 0.5, 1) infinite;
         }
+
+        @keyframes km-spin { 
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.1); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        /* تحسينات القراءة */
+        .selection-gold::selection { background: rgba(212, 175, 55, 0.3); color: white; }
     </style>
     <script type="importmap">
     {
@@ -57,11 +76,13 @@
     }
     </script>
 </head>
-<body>
+<body class="selection-gold">
     <div id="km-splash">
-        <div style="width: 35px; height: 35px; border: 2px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
-        <h1 style="color: #d4af37; margin-top: 15px; font-weight: 900; letter-spacing: 3px; font-size: 14px;">SOVEREIGN CORE</h1>
-        <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+        <div class="sovereign-loader"></div>
+        <div style="margin-top: 24px; text-align: center;">
+            <h1 style="color: var(--gold); font-weight: 900; letter-spacing: 6px; font-size: 16px; margin: 0;">CHATBANK</h1>
+            <p style="color: #444; font-size: 8px; font-weight: 700; margin-top: 8px; letter-spacing: 4px; text-transform: uppercase;">Sovereign Core Initializing</p>
+        </div>
     </div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
