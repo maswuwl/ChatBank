@@ -1,13 +1,11 @@
 
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" style="font-size: 11px;">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ChatBank (شاتبنك) - الذكاء السيادي</title>
+    <title>ChatBank - الذكاء السيادي</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@100..900&display=swap" rel="stylesheet">
     <style>
         body {
@@ -15,55 +13,33 @@
             background-color: #050505;
             color: #f3f4f6;
             margin: 0;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            overflow: hidden;
             -webkit-tap-highlight-color: transparent;
         }
-        #root {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 1;
-        }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #050505; }
+        #root { height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 10; }
+        
+        .km-glass { background: rgba(10, 10, 10, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(212, 175, 55, 0.1); }
+        .km-gold-glow { shadow-color: #d4af37; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.2)); }
+        
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #d4af37; border-radius: 10px; }
-        
-        .km-gold-glow { box-shadow: 0 0 20px rgba(212, 175, 55, 0.1); }
-        .km-gold-text-glow { text-shadow: 0 0 8px rgba(212, 175, 55, 0.3); }
-        .km-glass-card { 
-            background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(212, 175, 55, 0.1);
-        }
-        
-        .initial-loader {
+
+        #km-splash {
             position: fixed;
             inset: 0;
+            background: #050505;
+            z-index: 9999;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            background: #050505;
-            z-index: 9999;
-            transition: opacity 0.5s ease-out, visibility 0.5s;
+            transition: opacity 0.5s ease;
         }
-        .initial-loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+        #km-splash.fade-out { opacity: 0; pointer-events: none; }
         
-        /* تحسين استجابة الأزرار للمس */
-        button, [role="button"] {
-            cursor: pointer;
-            touch-action: manipulation;
-        }
+        .icon-active-scale:active { transform: scale(0.9); }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@^19.2.3",
@@ -78,11 +54,10 @@
 </script>
 </head>
 <body>
-    <div class="initial-loader" id="km-splash">
-        <div style="width: 50px; height: 50px; border: 3px solid rgba(212,175,55,0.1); border-top-color: #d4af37; border-radius: 50%; animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;"></div>
+    <div id="km-splash">
+        <div style="width: 40px; height: 40px; border: 3px solid #111; border-top-color: #d4af37; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <h1 style="color: #d4af37; margin-top: 20px; font-weight: 900; letter-spacing: 2px;">CHATBANK</h1>
         <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
-        <h1 style="color: #d4af37; margin-top: 20px; font-weight: 900; letter-spacing: -1px; font-size: 1.8rem; text-shadow: 0 0 10px rgba(212,175,55,0.3);">CHATBANK</h1>
-        <p style="color: #555; font-size: 9px; margin-top: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 2px;">Sovereign Protocol Initiating...</p>
     </div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
