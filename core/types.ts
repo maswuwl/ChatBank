@@ -42,3 +42,29 @@ export interface EngineResult {
     latencyMs: number;
   };
 }
+
+// Social Media Specific Types
+export interface Post {
+  id: string;
+  author: {
+    name: string;
+    avatar: string;
+    verified: boolean;
+  };
+  content: string;
+  image?: string;
+  likes: number;
+  comments: number;
+  timestamp: string;
+}
+
+export interface Notification {
+  id: string;
+  type: 'like' | 'comment' | 'friend_request' | 'ai_mention';
+  user: string;
+  text: string;
+  time: string;
+  read: boolean;
+}
+
+export type ViewState = 'feed' | 'messenger' | 'notifications' | 'profile' | 'groups' | 'settings';

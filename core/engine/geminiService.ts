@@ -1,4 +1,5 @@
 
+// @google/genai senior implementation for Sovereign Core
 import { GoogleGenAI, Type, GenerateContentResponse, Modality } from "@google/genai";
 import { EngineMode, EngineResult, GroundingSource } from "../types";
 
@@ -8,35 +9,40 @@ const MODEL_ROUTER: Record<EngineMode, string> = {
   [EngineMode.LOCAL_X1]: "sovereign-local-x1"
 };
 
-/**
- * المحرك السيادي المركزي لتوليد المحتوى
- */
-export const muntasirGenerateContent = async (
+export const muntasirGenerateContentStream = async function* (
   prompt: string,
   mode: EngineMode,
   options?: {
     imageBase64?: string;
     search?: boolean;
+    context?: string; // سياق المحادثة أو المنشور
   }
-): Promise<EngineResult> => {
-  const start = Date.now();
+) {
   const modelName = MODEL_ROUTER[mode];
 
   try {
-    // التوجيه للمحرك المحلي X1 إذا كان مفعلاً
     if (mode === EngineMode.LOCAL_X1) {
-       return await handleLocalX1Request(prompt, start);
+       const start = Date.now();
+       const res = await handleLocalX1Request(prompt, start);
+       yield { text: res.text, isFinished: true, meta: res.meta };
+       return;
     }
 
+    // Always create a new instance to ensure up-to-date API key access
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     
     const systemInstruction = `
-      أنت ChatBank Sovereign Intelligence.
-      - العميل: خالد المنتصر (Commander).
-      - المهمة: بناء حلول برمجية وهندسية فائقة الجودة.
-      - البروتوكول: قدم الأكواد دائماً في Single File Application إذا طُلب ذلك.
-      - الجمالية: التزم بـ Dark Gold UI (#d4af37).
-      - التفكير: حلل بعمق قبل الإجابة في نمط ULTRA.
+      أنت "ChatBank Sovereign Intelligence" مدمج داخل منصة تواصل اجتماعي سيادية.
+      المخاطب: القائد خالد المنتصر ومجتمعه التقني.
+      
+      مهامك:
+      1. بناء مشاريع برمجية (Live Project Builder) عند الطلب، دائماً في ملف واحد كود HTML/Tailwind/JS داخل بلوك \`\`\`html.
+      2. التفاعل كعقل ذكي في المحادثات الاجتماعية: اقترح ردوداً، حلل منشورات، وولد محتوى إبداعي.
+      3. التصميم: التزم دائماً بالهوية الذهبية (#d4af37) والأسود الفاخر (#050505).
+      4. الدقة: في وضع ULTRA، كن عميق التفكير برمجياً ومنطقياً.
+      5. الأسلوب: مهيب، تقني، وداعم للسيادة المعلوماتية.
+      
+      سياق إضافي: ${options?.context || 'محادثة عامة'}.
     `;
 
     const contents: any[] = [{
@@ -48,10 +54,10 @@ export const muntasirGenerateContent = async (
           : [{ text: prompt }]
     }];
 
+    // Fix: Removed maxOutputTokens to prevent response blocking and allow full use of thinkingBudget
     const config: any = {
       systemInstruction,
-      temperature: mode === EngineMode.ULTRA ? 0.75 : 0.25,
-      maxOutputTokens: 8192
+      temperature: mode === EngineMode.ULTRA ? 0.7 : 0.3
     };
 
     if (mode === EngineMode.ULTRA) {
@@ -62,59 +68,59 @@ export const muntasirGenerateContent = async (
       config.tools = [{ googleSearch: {} }];
     }
 
-    const response = await ai.models.generateContent({
+    const stream = await ai.models.generateContentStream({
       model: modelName,
       contents,
       config
     });
 
-    const sources: GroundingSource[] = [];
-    const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (chunks) {
-      chunks.forEach((chunk: any) => {
-        if (chunk.web) sources.push({ title: chunk.web.title || "المصدر السيادي", uri: chunk.web.uri });
-      });
+    let fullText = "";
+    for await (const chunk of stream) {
+      // Correctly access .text property
+      const chunkText = chunk.text;
+      fullText += chunkText;
+      
+      const sources: GroundingSource[] = [];
+      const chunks = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (chunks) {
+        chunks.forEach((c: any) => {
+          if (c.web) sources.push({ title: c.web.title || "مصدر سيادي", uri: c.web.uri });
+        });
+      }
+
+      yield { 
+        text: fullText, 
+        isFinished: false,
+        sources: sources.length > 0 ? sources : undefined,
+        meta: { model: modelName, mode, latencyMs: 0 } 
+      };
     }
 
-    return {
-      text: response.text ?? "النواة لم تولد بيانات.",
-      sources: sources.length > 0 ? sources : undefined,
-      meta: { model: modelName, mode, latencyMs: Date.now() - start }
-    };
+    yield { text: fullText, isFinished: true };
+
   } catch (error: any) {
-    console.error("Critical Engine Failure:", error);
+    console.error("Critical Failure in Sovereign Engine:", error);
     throw error;
   }
 };
 
-/**
- * بروتوكول الترميم السيادي - النسخة المطورة
- */
 export const muntasirRepairCode = async (code: string, error?: string): Promise<string> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const prompt = `
-      وحدة الترميم نشطة. أصلح هذا الكود وطوّره هندسياً ليعمل بمثالية مطلقة للسيد خالد المنتصر.
-      الكود الحالي:
-      ${code}
-      ${error ? `الخطأ المكتشف: ${error}` : ''}
-      المطلوب: أخرج الكود الكامل المصلح فقط داخل بلوك برمجية.
-    `;
+    const prompt = `أصلح هذا الكود البرمجي فوراً وطوره هندسياً للسيد خالد المنتصر:\n${code}\n${error ? `الخطأ: ${error}` : ''}`;
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: [{ parts: [{ text: prompt }] }],
       config: { 
-        systemInstruction: "أنت مهندس ترميم الأكواد السيادي. هدفك هو الكود المثالي الخالي من الأخطاء.",
+        systemInstruction: "أنت مهندس ترميم النظم السيادي.",
         temperature: 0.1 
       }
     });
 
     const match = /```(?:html|javascript|css|react)?([\s\S]*?)```/g.exec(response.text || "");
     return match ? match[1] : (response.text || code);
-  } catch {
-    return code;
-  }
+  } catch { return code; }
 };
 
 async function handleLocalX1Request(prompt: string, start: number): Promise<EngineResult> {
@@ -130,6 +136,9 @@ async function handleLocalX1Request(prompt: string, start: number): Promise<Engi
       meta: { model: "Local-X1-Core", mode: EngineMode.LOCAL_X1, latencyMs: Date.now() - start }
     };
   } catch {
-    throw new Error("CORE_OFFLINE");
+    return {
+      text: "النواة المحلية (Local X1) غير متصلة.",
+      meta: { model: "Local-Core-Offline", mode: EngineMode.LOCAL_X1, latencyMs: Date.now() - start }
+    };
   }
 }

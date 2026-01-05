@@ -1,291 +1,312 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Send, Search, Trash2, Loader2, Camera, Plus, MessageSquare, 
-  Database, Eye, X, BrainCircuit, Settings, Cpu, Globe, Zap
+  Home, MessageSquare, Bell, Users, User, Settings, Search, 
+  Plus, MoreVertical, Heart, MessageCircle, Share2, Globe, Cpu, Zap, Eye, ShieldAlert
 } from 'lucide-react';
 import Dashboard from './components/Dashboard';
 import VoiceInterface from './components/VoiceInterface';
 import ProjectSandbox from './components/ProjectSandbox';
-import { EngineMode, Message, MissionSession } from './core/types';
-import { muntasirGenerateContent } from './core/engine/geminiService';
+import MessengerWindow from './components/MessengerWindow';
+import { ViewState, Post, Notification, MissionSession, EngineMode } from './core/types';
 
-const STORAGE_KEY = 'chatbank_sovereign_v3';
+const STORAGE_KEY = 'chatbank_social_v1';
 
 const App: React.FC = () => {
+  const [view, setView] = useState<ViewState>('feed');
+  const [activeCode, setActiveCode] = useState<string | null>(null);
   const [sessions, setSessions] = useState<MissionSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [input, setInput] = useState('');
-  const [mode, setMode] = useState<EngineMode>(EngineMode.FLASH);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [useSearch, setUseSearch] = useState(false);
-  const [activeCodePreview, setActiveCodePreview] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [posts] = useState<Post[]>([
+    {
+      id: '1',
+      author: { name: 'خالد المنتصر', avatar: 'K', verified: true },
+      content: 'مرحباً بكم في عصر السيادة المعلوماتية. ChatBank ليس مجرد أداة، بل هو رفيقك البرمجي والذكاء الذي يقودك للمستقبل. ⚡🚀',
+      likes: 1250,
+      comments: 84,
+      timestamp: 'منذ ساعتين'
+    },
+    {
+      id: '2',
+      author: { name: 'Sovereign Core', avatar: 'AI', verified: false },
+      content: 'تم تحديث النواة السيادية (Local X1) بنجاح. بروتوكولات الأمان الآن في أعلى مستوياتها. #ChatBank #Intelligence',
+      image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1000',
+      likes: 856,
+      comments: 32,
+      timestamp: 'منذ 5 ساعات'
+    }
+  ]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [notifications] = useState<Notification[]>([
+    { id: '1', type: 'like', user: 'أحمد علي', text: 'أعجب بمنشورك الأخير', time: '10 د', read: false },
+    { id: '2', type: 'ai_mention', user: 'Sovereign Core', text: 'لديه اقتراح لمشروعك الجديد', time: '1 س', read: true }
+  ]);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setSessions(parsed);
-          setCurrentSessionId(parsed[0].id);
-        }
-      } catch (e) { console.error("Init Error", e); }
+        setSessions(parsed.sessions || []);
+      } catch (e) { console.error(e); }
     }
-    setIsLoaded(true);
   }, []);
 
   useEffect(() => {
-    if (isLoaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-    if (messagesEndRef.current) messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-  }, [sessions, isLoaded]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessions }));
+  }, [sessions]);
 
-  const currentSession = sessions.find(s => s.id === currentSessionId);
-  const messages = currentSession?.messages || [];
+  const getOrCreateSession = () => {
+    if (sessions.length > 0) return sessions[0];
+    const newS: MissionSession = { id: 'default', title: 'Main Chat', messages: [], lastUpdated: Date.now() };
+    setSessions([newS]);
+    return newS;
+  };
 
-  const handleSend = async () => {
-    if ((!input.trim() && !selectedImage) || isProcessing) return;
-
-    let targetId = currentSessionId;
-    if (!targetId) {
-      const newS: MissionSession = { id: Date.now().toString(), title: input.substring(0, 15) || "مهمة سيادية", messages: [], lastUpdated: Date.now() };
-      setSessions([newS]);
-      setCurrentSessionId(newS.id);
-      targetId = newS.id;
-    }
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: [{ text: input }, ...(selectedImage ? [{ image: selectedImage }] : [])],
-      timestamp: Date.now()
-    };
-
-    setSessions(prev => prev.map(s => s.id === targetId ? { ...s, messages: [...s.messages, userMsg], lastUpdated: Date.now() } : s));
-    
-    const currentInput = input;
-    const currentImage = selectedImage;
-    setInput('');
-    setSelectedImage(null);
-    setIsProcessing(true);
-
-    try {
-      const result = await muntasirGenerateContent(currentInput, mode, {
-        imageBase64: currentImage || undefined,
-        search: useSearch
-      });
-
-      const resMsg: Message = {
-        id: Date.now().toString(),
-        role: 'model',
-        content: [{ text: result.text }],
-        mode: result.meta.mode,
-        timestamp: Date.now(),
-        sources: result.sources,
-        latencyMs: result.meta.latencyMs,
-        modelName: result.meta.model
-      };
-
-      setSessions(prev => prev.map(s => s.id === targetId ? { ...s, messages: [...s.messages, resMsg] } : s));
-    } catch (err: any) {
-       console.error(err);
-    } finally {
-      setIsProcessing(false);
-    }
+  const updateSession = (updated: MissionSession) => {
+    setSessions(prev => prev.map(s => s.id === updated.id ? updated : s));
   };
 
   return (
-    <div className="flex h-screen bg-[#050505] text-[#f3f4f6] overflow-hidden relative">
-      {activeCodePreview && <ProjectSandbox code={activeCodePreview} onClose={() => setActiveCodePreview(null)} />}
+    <div className="flex h-screen bg-[#050505] text-gray-200 overflow-hidden font-sans">
+      {activeCode && <ProjectSandbox code={activeCode} onClose={() => setActiveCode(null)} />}
 
-      {/* Sidebar */}
-      <div className={`fixed inset-0 z-[200] transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSidebarOpen(false)}></div>
-          <aside className={`absolute right-0 top-0 h-full w-72 bg-[#080808] border-l border-[#d4af37]/20 transition-transform duration-500 transform ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
-              <div className="p-6 flex items-center justify-between border-b border-white/5">
-                  <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-[#d4af37] rounded-xl flex items-center justify-center text-black font-black">CB</div>
-                      <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-widest">بنك المستودعات</span>
-                  </div>
-                  <button onClick={() => setSidebarOpen(false)} className="p-2 text-gray-500 hover:text-white transition-all"><X size={22} /></button>
-              </div>
-              <div className="p-4 flex flex-col flex-1 overflow-hidden">
-                  <button onClick={() => { 
-                    const newS = { id: Date.now().toString(), title: "مهمة جديدة", messages: [], lastUpdated: Date.now() };
-                    setSessions(p => [newS, ...p]); setCurrentSessionId(newS.id); setSidebarOpen(false);
-                  }} className="w-full py-3.5 bg-[#d4af37] text-black font-black text-[10px] rounded-xl flex items-center justify-center gap-2 km-button-active shadow-lg shadow-[#d4af37]/10 mb-6 uppercase">
-                    <Plus size={16} /> مهمة جديدة
-                  </button>
-                  <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
-                      {sessions.map(s => (
-                        <div key={s.id} onClick={() => { setCurrentSessionId(s.id); setSidebarOpen(false); }} className={`p-3.5 rounded-xl cursor-pointer border transition-all flex items-center justify-between ${currentSessionId === s.id ? 'bg-[#d4af37]/10 border-[#d4af37]/40 text-[#d4af37]' : 'border-transparent hover:bg-white/5 text-gray-500'}`}>
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <MessageSquare size={14} />
-                            <span className="text-[10px] font-bold truncate">{s.title}</span>
-                          </div>
-                          <button onClick={(e) => { e.stopPropagation(); setSessions(prev => prev.filter(ses => ses.id !== s.id)); }} className="opacity-0 hover:opacity-100 p-1.5 hover:text-red-400"><Trash2 size={12} /></button>
-                        </div>
-                      ))}
-                  </div>
-              </div>
-          </aside>
-      </div>
+      {/* Desktop Sidebar (Left) */}
+      <aside className="hidden lg:flex flex-col w-72 border-l border-white/5 bg-black/40 backdrop-blur-2xl p-6">
+        <div className="flex items-center gap-3 mb-12">
+          <div className="w-10 h-10 bg-[#d4af37] rounded-2xl flex items-center justify-center text-black font-black shadow-lg shadow-[#d4af37]/20">CB</div>
+          <div>
+             <h1 className="text-sm font-black text-white tracking-[0.2em] uppercase">ChatBank</h1>
+             <p className="text-[8px] text-[#d4af37] font-bold uppercase tracking-widest">Sovereign Social</p>
+          </div>
+        </div>
 
-      <main className="flex-1 flex flex-col relative z-10 min-w-0">
-        <header className="h-16 md:h-20 flex items-center justify-between px-4 md:px-10 border-b border-white/5 bg-[#050505]/95 backdrop-blur-xl sticky top-0 z-[150]">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(true)} className="p-3 bg-white/5 rounded-xl text-[#d4af37] border border-white/5 hover:border-[#d4af37]/40 transition-all km-button-active">
-              <Database size={20} />
-            </button>
-            <button onClick={() => setUseSearch(!useSearch)} className={`p-3 rounded-xl border transition-all km-button-active ${useSearch ? 'bg-[#d4af37]/20 border-[#d4af37] text-[#d4af37]' : 'bg-white/5 border-transparent text-gray-500'}`}>
-              <Search size={20} />
-            </button>
-            <select 
-              value={mode} 
-              onChange={(e) => setMode(e.target.value as EngineMode)}
-              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-[10px] font-black text-[#d4af37] outline-none"
+        <nav className="space-y-3 flex-1">
+          {[
+            { id: 'feed', icon: <Home size={20} />, label: 'News Feed' },
+            { id: 'messenger', icon: <MessageSquare size={20} />, label: 'Messenger' },
+            { id: 'notifications', icon: <Bell size={20} />, label: 'Notifications' },
+            { id: 'groups', icon: <Users size={20} />, label: 'Groups & Pages' },
+            { id: 'profile', icon: <User size={20} />, label: 'My Profile' }
+          ].map(item => (
+            <button 
+              key={item.id}
+              onClick={() => setView(item.id as ViewState)}
+              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all ${view === item.id ? 'bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20' : 'text-gray-500 hover:bg-white/5 hover:text-gray-300'}`}
             >
-              <option value={EngineMode.FLASH}>FLASH CORE</option>
-              <option value={EngineMode.ULTRA}>ULTRA (THINKING)</option>
-              <option value={EngineMode.LOCAL_X1}>LOCAL X1</option>
-            </select>
-          </div>
+              {item.icon}
+              <span className="text-xs font-black uppercase tracking-widest">{item.label}</span>
+            </button>
+          ))}
+        </nav>
 
-          <div className="flex flex-col items-center select-none">
-             <div className="flex items-center gap-2 mb-0.5">
-                <Cpu size={14} className="text-[#d4af37] animate-pulse" />
-                <span className="text-[14px] font-black text-[#d4af37] tracking-[0.4em] uppercase">ChatBank</span>
-             </div>
-          </div>
+        <div className="mt-auto pt-6 border-t border-white/5">
+           <Dashboard />
+           <button onClick={() => setView('settings')} className="w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-gray-500 hover:bg-white/5 transition-all mt-4">
+              <Settings size={20} />
+              <span className="text-xs font-black uppercase tracking-widest">Settings</span>
+           </button>
+        </div>
+      </aside>
 
-          <div className="hidden md:flex items-center gap-3">
-             <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-xl border border-white/10">
-                <div className="w-6 h-6 rounded-md bg-[#d4af37] flex items-center justify-center text-black text-[10px] font-black">K</div>
-                <span className="text-[9px] font-black text-gray-400 uppercase">Sovereign Mode</span>
-             </div>
-          </div>
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 relative">
+        {/* Top Navigation / Search */}
+        <header className="h-20 flex items-center justify-between px-6 md:px-12 border-b border-white/5 bg-[#050505]/90 backdrop-blur-3xl sticky top-0 z-[100]">
+           <div className="flex items-center gap-6 flex-1 max-w-xl">
+              <div className="relative w-full group">
+                 <Search size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-[#d4af37] transition-colors" />
+                 <input 
+                   placeholder="ابحث عن أصدقاء، مشاريع، أو عوالم سيادية..." 
+                   className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pr-12 pl-4 text-xs outline-none focus:border-[#d4af37]/40 transition-all placeholder:text-gray-700"
+                 />
+              </div>
+           </div>
+           <div className="flex items-center gap-4">
+              <button className="p-3 bg-[#d4af37] text-black rounded-2xl shadow-lg shadow-[#d4af37]/20 hover:scale-110 transition-all">
+                <Plus size={22} />
+              </button>
+              <div className="hidden md:flex flex-col items-end">
+                 <span className="text-[10px] font-black text-white uppercase">Khalid Muntasir</span>
+                 <span className="text-[8px] text-[#d4af37] font-bold uppercase">Pro Builder</span>
+              </div>
+           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-4 md:px-16 lg:px-24 py-8 space-y-10 custom-scrollbar">
-          <Dashboard />
-          <VoiceInterface />
-
-          {messages.length === 0 ? (
-            <div className="h-[60vh] flex flex-col items-center justify-center text-center opacity-30">
-              <BrainCircuit size={120} className="text-[#d4af37] mb-6 animate-pulse" />
-              <h2 className="text-3xl font-black uppercase tracking-[0.5em] text-[#d4af37]">Sovereign IQ</h2>
-              <p className="text-[10px] font-bold uppercase tracking-[0.3em] mt-2">Ready for Command Protocol</p>
-            </div>
-          ) : (
-            <div className="max-w-4xl mx-auto space-y-10 pb-20">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-6`}>
-                  <div className={`max-w-[95%] md:max-w-[85%] p-6 md:p-8 rounded-[2.5rem] shadow-2xl ${msg.role === 'user' ? 'bg-[#d4af37]/5 border border-[#d4af37]/20' : 'km-glass border border-white/5'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3 opacity-40">
-                            <div className={`w-2 h-2 rounded-full ${msg.role === 'user' ? 'bg-white' : 'bg-[#d4af37]'}`}></div>
-                            <span className="text-[8px] font-black uppercase tracking-widest">{msg.role === 'user' ? 'Khalid Muntasir' : 'Sovereign Core'}</span>
-                        </div>
-                        {msg.latencyMs && (
-                            <div className="flex items-center gap-2 opacity-30 text-[7px] font-bold uppercase">
-                                <Zap size={8} /> {msg.latencyMs}ms | {msg.modelName}
-                            </div>
-                        )}
-                    </div>
-                    {msg.content.map((c, i) => (
-                      <div key={i} className="space-y-6">
-                        {c.text && <p className="text-[13px] md:text-[14px] leading-relaxed whitespace-pre-wrap text-gray-200 font-medium">{c.text}</p>}
-                        {c.text && /```(?:html|javascript|css|react)?([\s\S]*?)```/g.test(c.text) && (
-                           <button onClick={() => {
-                             const match = /```(?:html|javascript|css|react)?([\s\S]*?)```/g.exec(c.text || "");
-                             if(match) setActiveCodePreview(match[1]);
-                           }} className="w-full mt-6 flex items-center justify-center gap-4 py-4 bg-[#d4af37] text-black rounded-2xl font-black text-[11px] km-button-active shadow-2xl hover:bg-[#b8962d] transition-all uppercase tracking-widest">
-                             <Eye size={18} /> معاينة الحل السيادي
-                           </button>
-                        )}
-                        {c.image && <img src={c.image} className="rounded-3xl border border-white/10 shadow-2xl" />}
-                      </div>
-                    ))}
-
-                    {msg.sources && msg.sources.length > 0 && (
-                        <div className="mt-6 pt-4 border-t border-white/5">
-                            <div className="flex items-center gap-2 mb-3 opacity-50">
-                                <Globe size={10} className="text-[#d4af37]" />
-                                <span className="text-[8px] font-black uppercase tracking-widest">المصادر المسترجعة:</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {msg.sources.map((src, idx) => (
-                                    <a key={idx} href={src.uri} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-bold text-[#d4af37] hover:bg-[#d4af37]/10 transition-all flex items-center gap-2">
-                                        <div className="w-1 h-1 bg-[#d4af37] rounded-full"></div>
-                                        {src.title}
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+        {/* View Switcher */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          {view === 'feed' && (
+            <div className="max-w-2xl mx-auto py-10 px-4 space-y-8">
+               <VoiceInterface />
+               <div className="km-glass p-6 rounded-[2.5rem] border-white/10 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#d4af37] to-[#b8962d] p-0.5">
+                     <div className="w-full h-full rounded-full bg-black flex items-center justify-center font-black">K</div>
                   </div>
-                </div>
-              ))}
-              <div ref={messagesEndRef} className="h-10" />
+                  <button className="flex-1 text-right px-6 py-3 bg-white/5 rounded-2xl text-gray-500 text-[12px] font-medium hover:bg-white/10 transition-all">
+                     بماذا تفكر يا قائد؟
+                  </button>
+               </div>
+
+               {posts.map(post => (
+                 <div key={post.id} className="km-glass rounded-[2.5rem] border-white/5 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="p-6">
+                       <div className="flex items-center justify-between mb-6">
+                          <div className="flex items-center gap-4">
+                             <div className="w-12 h-12 rounded-full bg-[#d4af37]/20 border border-[#d4af37]/40 flex items-center justify-center font-black text-[#d4af37]">
+                                {post.author.avatar}
+                             </div>
+                             <div>
+                                <div className="flex items-center gap-2">
+                                   <h4 className="text-[13px] font-black text-white uppercase">{post.author.name}</h4>
+                                   {post.author.verified && <Zap size={12} className="text-[#d4af37] fill-[#d4af37]" />}
+                                </div>
+                                <span className="text-[9px] text-gray-600 font-bold uppercase">{post.timestamp}</span>
+                             </div>
+                          </div>
+                          <button className="p-2 text-gray-600 hover:text-white transition-all"><MoreVertical size={18} /></button>
+                       </div>
+                       <p className="text-[14px] leading-relaxed mb-6 text-gray-300">{post.content}</p>
+                       {post.image && (
+                         <img src={post.image} className="w-full h-80 object-cover rounded-3xl mb-6 border border-white/5" />
+                       )}
+                       <div className="flex items-center gap-6 border-t border-white/5 pt-6">
+                          <button className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-all text-xs font-bold">
+                             <Heart size={18} /> {post.likes}
+                          </button>
+                          <button className="flex items-center gap-2 text-gray-500 hover:text-[#d4af37] transition-all text-xs font-bold">
+                             <MessageCircle size={18} /> {post.comments}
+                          </button>
+                          <button className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-all text-xs font-bold mr-auto">
+                             <Share2 size={18} />
+                          </button>
+                       </div>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          )}
+
+          {view === 'messenger' && (
+             <MessengerWindow 
+               session={getOrCreateSession()} 
+               onUpdateSession={updateSession}
+               onOpenPreview={(code) => setActiveCode(code)}
+             />
+          )}
+
+          {view === 'notifications' && (
+            <div className="max-w-2xl mx-auto py-12 px-6 space-y-4">
+               <h2 className="text-xl font-black text-white uppercase tracking-widest mb-8">الإشعارات</h2>
+               {notifications.map(n => (
+                 <div key={n.id} className={`p-6 rounded-3xl border ${n.read ? 'bg-white/5 border-white/5' : 'bg-[#d4af37]/5 border-[#d4af37]/20'} flex items-center gap-4 transition-all hover:scale-[1.01]`}>
+                    <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-[#d4af37]">
+                       {n.type === 'like' ? <Heart size={20} /> : <Zap size={20} />}
+                    </div>
+                    <div className="flex-1">
+                       <p className="text-[13px] text-gray-200">
+                          <span className="font-black text-[#d4af37] ml-1">{n.user}</span>
+                          {n.text}
+                       </p>
+                       <span className="text-[9px] text-gray-600 font-bold uppercase mt-1 block">{n.time}</span>
+                    </div>
+                    {!n.read && <div className="w-2 h-2 bg-[#d4af37] rounded-full shadow-[0_0_8px_#d4af37]"></div>}
+                 </div>
+               ))}
+            </div>
+          )}
+
+          {view === 'profile' && (
+            <div className="max-w-4xl mx-auto py-16 px-6">
+               <div className="relative mb-24">
+                  <div className="h-64 w-full bg-gradient-to-br from-[#111] to-black rounded-[3rem] border border-white/5 overflow-hidden">
+                     <div className="absolute inset-0 bg-[#d4af37]/5 backdrop-blur-3xl animate-pulse"></div>
+                  </div>
+                  <div className="absolute -bottom-16 right-12 flex items-end gap-8">
+                     <div className="w-40 h-40 rounded-[2.5rem] bg-black border-4 border-[#050505] shadow-2xl p-1">
+                        <div className="w-full h-full bg-gradient-to-br from-[#d4af37] to-[#b8962d] rounded-[2rem] flex items-center justify-center text-5xl font-black text-black">K</div>
+                     </div>
+                     <div className="pb-8">
+                        <h2 className="text-3xl font-black text-white uppercase tracking-widest mb-1">خالد المنتصر</h2>
+                        <p className="text-xs text-[#d4af37] font-black uppercase tracking-[0.3em]">Commander of Sovereign Intelligence</p>
+                     </div>
+                  </div>
+               </div>
+               <div className="grid grid-cols-3 gap-6 mb-12">
+                  {[
+                    { label: 'المنشورات', val: '128' },
+                    { label: 'الأصدقاء', val: '4.2k' },
+                    { label: 'المشاريع', val: '56' }
+                  ].map((stat, i) => (
+                    <div key={i} className="km-glass p-6 rounded-3xl border-white/5 text-center">
+                       <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest mb-1">{stat.label}</p>
+                       <p className="text-xl font-black text-white">{stat.val}</p>
+                    </div>
+                  ))}
+               </div>
             </div>
           )}
         </div>
-
-        {/* Input Area */}
-        <div className="p-4 md:p-10 bg-gradient-to-t from-[#050505] to-transparent sticky bottom-0">
-          <div className="max-w-4xl mx-auto relative">
-            {isProcessing && (
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-3 px-6 py-2 bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-full animate-pulse">
-                    <Loader2 size={14} className="text-[#d4af37] animate-spin" />
-                    <span className="text-[9px] font-black text-[#d4af37] uppercase tracking-widest">
-                        {mode === EngineMode.ULTRA ? 'النواة تحلل بعمق...' : 'جاري التنفيذ السيادي...'}
-                    </span>
-                </div>
-            )}
-            <div className="km-glass p-3 md:p-4 rounded-[2.5rem] flex items-center gap-4 border-white/10 focus-within:border-[#d4af37]/60 transition-all shadow-2xl">
-              <button onClick={() => fileInputRef.current?.click()} className="p-4 bg-white/5 text-gray-400 hover:text-[#d4af37] rounded-full transition-all">
-                <Camera size={24} />
-              </button>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) { const r = new FileReader(); r.onload = () => setSelectedImage(r.result as string); r.readAsDataURL(f); }
-              }} />
-              
-              <textarea 
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder="أدخل أوامرك..."
-                className="flex-1 bg-transparent border-none focus:ring-0 text-[14px] text-white placeholder-gray-800 outline-none resize-none py-3 font-medium"
-                rows={1}
-              />
-              
-              <button 
-                onClick={handleSend}
-                disabled={isProcessing || (!input.trim() && !selectedImage)}
-                className={`p-4 md:px-10 rounded-full font-black text-[11px] transition-all flex items-center gap-4 ${isProcessing || (!input.trim() && !selectedImage) ? 'bg-gray-800 text-gray-600' : 'bg-[#d4af37] text-black shadow-xl shadow-[#d4af37]/30 hover:bg-[#b8962d] uppercase tracking-widest'}`}
-              >
-                {isProcessing ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                <span className="hidden md:block">إرسال</span>
-              </button>
-            </div>
-            {selectedImage && (
-              <div className="absolute bottom-full left-10 mb-4">
-                <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-[#d4af37]/40">
-                  <img src={selectedImage} className="w-full h-full object-cover" />
-                  <button onClick={() => setSelectedImage(null)} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg"><X size={12} /></button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
       </main>
+
+      {/* Desktop Friends/Status Sidebar (Right) */}
+      <aside className="hidden xl:flex flex-col w-80 border-r border-white/5 bg-black/20 p-8">
+         <div className="mb-10">
+            <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-6">Trending Technology</h3>
+            <div className="space-y-4">
+               {['#ChatBank_Live', '#Sovereign_AI', '#React_Project_Builder'].map((tag, i) => (
+                 <div key={i} className="p-4 bg-white/5 rounded-2xl border border-white/5 hover:border-[#d4af37]/30 transition-all cursor-pointer group">
+                    <p className="text-[11px] font-black text-[#d4af37] group-hover:text-white">{tag}</p>
+                    <span className="text-[8px] text-gray-700 font-bold uppercase">4.2k discussions</span>
+                 </div>
+               ))}
+            </div>
+         </div>
+
+         <div>
+            <h3 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-6">Active Sovereigns</h3>
+            <div className="space-y-4">
+               {[1, 2, 3].map(i => (
+                 <div key={i} className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-2xl transition-all cursor-pointer">
+                    <div className="relative">
+                       <div className="w-10 h-10 rounded-xl bg-gray-800"></div>
+                       <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#050505]"></div>
+                    </div>
+                    <div>
+                       <p className="text-[11px] font-black text-white uppercase">User_{i}</p>
+                       <span className="text-[8px] text-gray-700 font-bold uppercase">Coding now...</span>
+                    </div>
+                 </div>
+               ))}
+            </div>
+         </div>
+
+         <div className="mt-auto p-6 bg-[#d4af37]/5 border border-[#d4af37]/20 rounded-3xl text-center">
+            <ShieldAlert size={24} className="text-[#d4af37] mx-auto mb-3" />
+            <p className="text-[9px] font-black text-white uppercase mb-2">Metadata Shield Active</p>
+            <div className="h-1.5 w-full bg-black/40 rounded-full overflow-hidden">
+               <div className="h-full w-[95%] bg-[#d4af37] animate-pulse"></div>
+            </div>
+         </div>
+      </aside>
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-20 bg-black/80 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-4 z-[500]">
+        {[
+          { id: 'feed', icon: <Home size={22} /> },
+          { id: 'messenger', icon: <MessageSquare size={22} /> },
+          { id: 'notifications', icon: <Bell size={22} /> },
+          { id: 'groups', icon: <Users size={22} /> },
+          { id: 'profile', icon: <User size={22} /> }
+        ].map(item => (
+          <button 
+            key={item.id}
+            onClick={() => setView(item.id as ViewState)}
+            className={`p-4 transition-all ${view === item.id ? 'text-[#d4af37] scale-110' : 'text-gray-600'}`}
+          >
+            {item.icon}
+          </button>
+        ))}
+      </nav>
     </div>
   );
 };
